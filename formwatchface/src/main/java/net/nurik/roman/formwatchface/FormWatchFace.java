@@ -29,10 +29,12 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PixelFormat;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -45,10 +47,16 @@ import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.format.DateFormat;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
+import android.view.GestureDetector;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
+import android.view.View;
 import android.view.WindowInsets;
+import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
+import android.widget.Toast;
 
 import com.google.android.apps.muzei.api.MuzeiContract;
 
@@ -79,7 +87,7 @@ public class FormWatchFace extends CanvasWatchFaceService {
         return new Engine();
     }
 
-    private class Engine extends CanvasWatchFaceService.Engine {
+    private class Engine extends CanvasWatchFaceService.Engine implements View.OnTouchListener, GestureDetector.OnGestureListener {
         private Paint mAmbientBackgroundPaint;
         private Paint mBackgroundPaint;
 
@@ -126,10 +134,21 @@ public class FormWatchFace extends CanvasWatchFaceService {
         private Path mUpdateThemeClipPath = new Path();
         private RectF mTempRectF = new RectF();
 
+        private WindowManager windowManager;
+        private GestureDetector gestureDetector;
+        private View windowView;
+
         @Override
         public void onCreate(SurfaceHolder holder) {
             LOGD(TAG, "onCreate");
             super.onCreate(holder);
+
+            windowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+            windowView = new View(getApplicationContext());
+            windowView.setOnTouchListener(this);
+
+            gestureDetector = new GestureDetector(getApplicationContext(), this);
+            addWindowView();
 
             updateDateStr();
 
@@ -146,8 +165,35 @@ public class FormWatchFace extends CanvasWatchFaceService {
             initMuzei();
         }
 
+        private void addWindowView() {
+            if (windowManager != null) {
+                try {
+                    windowManager.addView(windowView, new WindowManager.LayoutParams(
+                            WindowManager.LayoutParams.MATCH_PARENT,
+                            WindowManager.LayoutParams.MATCH_PARENT,
+                            WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
+                            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                            PixelFormat.TRANSPARENT
+                    ));
+                } catch (Exception e) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(getApplicationContext()))
+                        startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName())));
+                    else if (!(e instanceof IllegalStateException)) {
+                        e.printStackTrace();
+                        Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+        }
+
+        private void removeWindowView() {
+            if (windowManager != null && windowView.getParent() != null)
+                windowManager.removeViewImmediate(windowView);
+        }
+
         @Override
         public void onDestroy() {
+            removeWindowView();
             super.onDestroy();
             unregisterSystemSettingsListener();
             unregisterSharedPrefsListener();
@@ -215,12 +261,9 @@ public class FormWatchFace extends CanvasWatchFaceService {
 
         private void updateWatchFaceStyle() {
             setWatchFaceStyle(new WatchFaceStyle.Builder(FormWatchFace.this)
-                    .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
-                    .setCardPeekMode(WatchFaceStyle.PEEK_MODE_VARIABLE)
-                    .setPeekOpacityMode(WatchFaceStyle.PEEK_OPACITY_MODE_TRANSLUCENT)
+                    .setAcceptsTapEvents(true)
+                    .setCardProgressMode(WatchFaceStyle.PROGRESS_MODE_DISPLAY)
                     .setStatusBarGravity(Gravity.TOP | Gravity.CENTER)
-                    .setHotwordIndicatorGravity(Gravity.TOP | Gravity.CENTER)
-                    .setViewProtection(0)
                     .setShowUnreadCountIndicator(mShowNotificationCount && !mMute)
                     .build());
         }
@@ -259,7 +302,8 @@ public class FormWatchFace extends CanvasWatchFaceService {
             super.onVisibilityChanged(visible);
             if (visible) {
                 postInvalidate();
-            }
+                addWindowView();
+            } else removeWindowView();
         }
 
         private void initMuzei() {
@@ -457,6 +501,46 @@ public class FormWatchFace extends CanvasWatchFaceService {
             LOGD(TAG, "onAmbientModeChanged: " + inAmbientMode);
             super.onAmbientModeChanged(inAmbientMode);
             postInvalidate();
+            if (inAmbientMode)
+                removeWindowView();
+            else addWindowView();
+        }
+
+        @Override
+        public boolean onDown(MotionEvent e) {
+            return false;
+        }
+
+        @Override
+        public void onShowPress(MotionEvent e) {
+
+        }
+
+        @Override
+        public boolean onSingleTapUp(MotionEvent e) {
+            return false;
+        }
+
+        @Override
+        public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+            return false;
+        }
+
+        @Override
+        public void onLongPress(MotionEvent e) {
+
+        }
+
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+            if (Math.abs(velocityY) > Math.abs(velocityX))
+                return true;
+            else {
+                if (false && velocityX < 0) { //TODO: replace with complication preference
+                    //TODO: open the app drawer somehow
+                }
+                return false;
+            }
         }
 
         @Override
@@ -645,5 +729,13 @@ public class FormWatchFace extends CanvasWatchFaceService {
                 postInvalidate();
             }
         };
+
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            if (gestureDetector.onTouchEvent(event)) {
+                v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                return true;
+            } else return false;
+        }
     }
 }

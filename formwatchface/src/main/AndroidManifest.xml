@@ -19,6 +19,9 @@
 
     <uses-feature android:name="android.hardware.type.watch" />
 
+    <!-- Used for gestures and screen lock -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
     <!-- Required to act as a custom watch face. -->
     <uses-permission android:name="com.google.android.permission.PROVIDE_BACKGROUND" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
