@@ -32,8 +32,16 @@
     <color name="form_yellow_mid">#F4B400</color>
     <color name="form_yellow_light">#F7CB4D</color>
 
+    <color name="form_white_dark">#BDBDBD</color>
+    <color name="form_white_mid">#F5F5F5</color>
+    <color name="form_white_light">#FAFAFA</color>
+
     <color name="form_gray_dark">#424242</color>
     <color name="form_gray_mid">#9E9E9E</color>
     <color name="form_gray_light">#BDBDBD</color>
+
+    <color name="form_black_dark">#000000</color>
+    <color name="form_black_mid">#BDBDBD</color>
+    <color name="form_black_light">#E0E0E0</color>
 
 </resources>

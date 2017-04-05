@@ -32,7 +32,9 @@ public class Themes {
             new Theme("teal", R.color.form_teal_light, R.color.form_teal_mid, R.color.form_teal_dark),
             new Theme("red", R.color.form_red_light, R.color.form_red_mid, R.color.form_red_dark),
             new Theme("yellow", R.color.form_yellow_light, R.color.form_yellow_mid, R.color.form_yellow_dark),
+            new Theme("white", R.color.form_white_light, R.color.form_white_mid, R.color.form_white_dark),
             new Theme("gray", R.color.form_gray_light, R.color.form_gray_mid, R.color.form_gray_dark),
+            new Theme("black", R.color.form_black_light, R.color.form_black_mid, R.color.form_black_dark)
     };
 
     public static Theme MUZEI_THEME = new Theme("muzei", 0, 0, 0);
