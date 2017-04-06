@@ -528,19 +528,28 @@ public class FormWatchFace extends CanvasWatchFaceService {
 
         @Override
         public void onLongPress(MotionEvent e) {
-
+            windowView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+            removeWindowView();
         }
 
         @Override
         public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-            if (Math.abs(velocityY) > Math.abs(velocityX))
-                return true;
-            else {
+            if (Math.abs(velocityY) > Math.abs(velocityX) && Math.abs(velocityY) > 1800) {
+                if (velocityY > 0) {
+                    //TODO: open quick toggles
+                } else {
+                    //TODO: open notification panel
+                }
+
+                windowView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+            } else if (Math.abs(velocityX) > 1800) {
                 if (false && velocityX < 0) { //TODO: replace with complication preference
                     //TODO: open the app drawer somehow
+                    windowView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                 }
-                return false;
             }
+
+            return false;
         }
 
         @Override
@@ -732,10 +741,7 @@ public class FormWatchFace extends CanvasWatchFaceService {
 
         @Override
         public boolean onTouch(View v, MotionEvent event) {
-            if (gestureDetector.onTouchEvent(event)) {
-                v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
-                return true;
-            } else return false;
+            return gestureDetector.onTouchEvent(event);
         }
     }
 }
